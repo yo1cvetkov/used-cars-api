@@ -13,6 +13,10 @@ export class UsersService {
   }
 
   findOne(id: number): Promise<User> {
+    if (!id) {
+      return null;
+    }
+
     return this.repo.findOne({ where: { id } });
   }
 
