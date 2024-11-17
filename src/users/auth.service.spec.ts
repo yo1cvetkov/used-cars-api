@@ -11,11 +11,17 @@ describe('AuthService', () => {
   let fakeUsersService: Partial<UsersService>;
   beforeEach(async () => {
     // Create fake copy of users service
-
+    const users: User[] = [];
     fakeUsersService = {
-      find: () => Promise.resolve([]),
-      create: (email: string, password: string) =>
-        Promise.resolve({ id: 1, email, password } as User),
+      find: (email: string) => {
+        const filteredUsers = users.filter((user) => user.email === email);
+        return Promise.resolve(filteredUsers);
+      },
+      create: (email: string, password: string) => {
+        const user = { id: Math.floor(Math.random() * 9999), email, password };
+        users.push(user);
+        return Promise.resolve(user);
+      },
     };
 
     const module = await Test.createTestingModule({
@@ -46,8 +52,8 @@ describe('AuthService', () => {
   });
 
   it('Throws an error if user signs up with email that is in use', async () => {
-    fakeUsersService.find = () =>
-      Promise.resolve([{ id: 1, email: 'a', password: '1' } as User]);
+    await service.signup('asdf@asdf.com', 'asdf');
+
     await expect(service.signup('asdf@asdf.com', 'asdf')).rejects.toThrow(
       BadRequestException,
     );
@@ -60,10 +66,7 @@ describe('AuthService', () => {
   });
 
   it('Throws if an invalid password is provided', async () => {
-    fakeUsersService.find = () =>
-      Promise.resolve([
-        { email: 'asdf@asdf.com', password: 'laskdjf' } as User,
-      ]);
+    await service.signup('laskdjf@alskdfj.com', 'password1');
 
     await expect(
       service.signin('laskdjf@alskdfj.com', 'password'),
@@ -71,10 +74,7 @@ describe('AuthService', () => {
   });
 
   it('Returns a user if correct password is provided', async () => {
-    fakeUsersService.find = () =>
-      Promise.resolve([
-        { email: 'asdf@asdf.com', password: 'laskdjf' } as User,
-      ]);
+    await service.signup('asdf@asdf.com', 'mypassword');
 
     const user = await service.signin('asdf@asdf.com', 'mypassword');
     expect(user).toBeDefined();
